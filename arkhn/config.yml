@@ -1,5 +1,5 @@
 sql:
-    default: 'postgre'
+    default: 'oracle'
     postgre:
         lib: 'psycopg2'
         args: []
@@ -9,7 +9,11 @@ sql:
             database: "cw_local"
             user: "postgres"
             password: "postgres"
+    oracle:
+        lib: 'cx_Oracle'
+        args: ['system/cwprod2@CWPROD']
+        kwargs: {}
 filesystem:
-    mapping: '../../fhir-mapping'
+    mapping: '../fhir-mappings'
 graphql:
     server: 'https://graphql.live.arkhn.org/'

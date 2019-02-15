@@ -133,7 +133,7 @@ def build_sql_query(project, resource, info='ICSF.PATIENT'):
     # Format the sql arguments
     col_names = cols
     joins, dependency_graph = parse_joins(joins)
-    sql_query = "SELECT {} FROM {} {}".format(
+    sql_query = "SELECT {} FROM {} {} WHERE ROWNUM <= 100".format(
         ", ".join(col_names),
         table_name,
         " ".join(
