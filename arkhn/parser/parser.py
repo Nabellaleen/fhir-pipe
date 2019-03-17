@@ -444,7 +444,7 @@ def get_script_arity(cols, scripts):
         )
 
 
-def dfs_create_fhir(d, tree, row):
+def dfs_create_fhir(fhir_object, tree, row):
     """
         For each instance of a Resource,
         Run through the dict/tree of a Resource (and the references to templates)
@@ -453,7 +453,7 @@ def dfs_create_fhir(d, tree, row):
         Processed by the appropriate script.
 
         args:
-            d: the fhir structure we build
+            fhir_object: the fhir structure we build
             tree: the FHIR spec mapping from graphql
             row: one row of the result of the SQL query
 
@@ -462,42 +462,50 @@ def dfs_create_fhir(d, tree, row):
     """
     # if there are columns specified
     if "inputColumns" in tree.keys() and len(tree["inputColumns"]) > 0:
-        l = []
+        values = []
+        # Get the values returned by sql (in row) corresponding to this columns
         for col in tree['inputColumns']:
             if col['table'] is not None and col['column'] is not None:
-                script_name = col['script']
                 value = row.pop(0)
+                script_name = col['script']
+                # Clean if script provided
                 if script_name is not None:
                     value = scripts.get_script(script_name)(value)
-                l.append(value)
             else:
-                l.append(col['staticValue'])
+                value = col['staticValue']
+            values.append(value)
 
+        # Rm the list structure if not appropriate
+        if not tree['type'].startswith('list'):
+            values = ''.join(values)
+        # Store in fhir_object
+        if tree['name'] != 'generalPractitioner':  #FIXME Handle references
+            fhir_object[tree['name']] = values
+    # else iterate recursively
+    else:
+        # If the type references a list
         if tree['type'].startswith('list'):
-            d[tree['name']] = l
-        else:
-            d[tree['name']] = ''.join(l)
-    else:  # else iterate recursively
-        if tree['type'].startswith('list'):
-            d[tree['name']] = list()
-            for a in tree['attributes']:
+            fhir_object[tree['name']] = list()
+            # Loop on all attributes available
+            for attribute in tree['attributes']:
+                # If row element is a list (happens with one to many joins)
                 if len(row) > 0 and isinstance(row[0], list):
                     join_rows = row.pop(0)
                     for join_row in join_rows:
-                        d2 = dict()
-                        dfs_create_fhir(d2, a, list(join_row))
-                        d[tree['name']].append(d2)
+                        fhir_child_object = dict()
+                        dfs_create_fhir(fhir_child_object, attribute, list(join_row))
+                        fhir_object[tree['name']].append(fhir_child_object)
                 else:
-                    d2 = dict()
-                    dfs_create_fhir(d2, a, row)
-                    d[tree['name']].append(d2)
+                    fhir_child_object = dict()
+                    dfs_create_fhir(fhir_child_object, attribute, row)
+                    fhir_object[tree['name']].append(fhir_child_object)
         elif tree['isProfile']:
-            for a in tree['attributes']:
-                dfs_create_fhir(d, a, row)
+            for attribute in tree['attributes']:
+                dfs_create_fhir(fhir_object, attribute, row)
         else:
-            d[tree['name']] = dict()
-            for a in tree['attributes']:
-                dfs_create_fhir(d[tree['name']], a, row)
+            fhir_object[tree['name']] = dict()
+            for attribute in tree['attributes']:
+                dfs_create_fhir(fhir_object[tree['name']], attribute, row)
 
 
 def clean_fhir(tree):
