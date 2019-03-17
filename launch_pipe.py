@@ -47,11 +47,11 @@ for i, row in enumerate(rows):
     # The first node has a different structure so we iterate outside the
     # dfs_create_fhir function
     tree = dict()
+    tree['resourceType'] = resource
+    tree['id'] = str(int(random.random() * 10e10))
     for attr in resource_structure['attributes']:
         arkhn.parser.dfs_create_fhir(tree, attr, row)
     tree, n_leafs = arkhn.parser.clean_fhir(tree)
-    tree['id'] = int(random.random() * 10e10)
-    tree['resourceType'] = resource
     json_rows.append(tree)
     # print(json.dumps(tree, indent=2, ensure_ascii=False))
 
