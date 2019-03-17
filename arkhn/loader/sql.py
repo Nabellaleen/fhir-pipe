@@ -2,7 +2,22 @@ import psycopg2
 import cx_Oracle
 import logging
 
+import fhirbase
+
 from arkhn.config import Config
+
+
+def save_in_fhirbase(instances):
+    """
+    Save instances of FHIR resources in the fhirbase
+    :param instances: list of instances
+    """
+    with psycopg2.connect(
+            dbname='fhirbase', user='postgres',
+            host='localhost', port='5432') as connection:
+        fb = fhirbase.FHIRBase(connection)
+        for instance in instances:
+            fb.create(instance)
 
 
 def get_connection(connection_type: str = None):

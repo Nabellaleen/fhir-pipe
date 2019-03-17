@@ -1,4 +1,3 @@
-import json
 import time
 import random
 
@@ -54,6 +53,9 @@ for i, row in enumerate(rows):
     tree, n_leafs = arkhn.parser.clean_fhir(tree)
     json_rows.append(tree)
     # print(json.dumps(tree, indent=2, ensure_ascii=False))
+
+# Save instances in fhirbase
+arkhn.sql.save_in_fhirbase(json_rows)
 
 # Uncomment to write to file
 arkhn.parser.write_to_file(json_rows, 'fhir_data/samples.json')
